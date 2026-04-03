@@ -52,9 +52,9 @@
         .tkt-body{padding:4px 13px}
         .bet{display:grid;grid-template-columns:90px 1fr;align-items:center;gap:10px;padding:7px 0;border-bottom:1px dashed var(--b1)}
         .bet-n{font-family:var(--mono);font-size:22px;font-weight:600;color:#fff;letter-spacing:5px}
-        .mb-row{display:grid;grid-template-columns:46px 1fr 1fr;gap:5px;align-items:center;padding:5px 10px;border-top:1px solid var(--b1)}
+        .mb-row{display:grid;grid-template-columns:1fr 1fr;gap:5px;align-items:center;padding:5px 10px;border-top:1px solid var(--b1)}
         .mb-cell{background:var(--s2);border-radius:6px;border:1px solid var(--b1);padding:7px 6px}
-        .mb-num{font-family:var(--mono);font-size:18px;font-weight:600;color:#fff;letter-spacing:3px}
+        .mb-num{font-family:var(--mono);font-size:18px;font-weight:600;color:#fff;letter-spacing:3px;text-align:center}
         .cf{display:flex;align-items:center;gap:12px;padding:14px 13px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);margin-bottom:10px}
         .tw{overflow-x:auto;border:1px solid var(--b1);border-radius:var(--r);background:var(--s1)}
         table{width:100%;border-collapse:collapse;min-width:340px}
@@ -90,20 +90,31 @@ function modA(p1) {
     if (pa === pb) { D = pa; S = pc; }
     else if (pb === pc) { D = pb; S = pa; }
     else { D = pa; S = pb; }
+    
+    // 百位候选 = {Mir(D), Mir(S), D+1, S+1} 剔除 {N-1 百位}
     const hundSet = new Set([Mir(D), Mir(S), w(D + 1), w(S + 1)]);
     hundSet.delete(pa);
+    
+    // 十位候选 = {0-9 全集} 剔除 {D, S, Mir(D), Mir(S)}
     const tenSet = new Set([0,1,2,3,4,5,6,7,8,9]);
     [D, S, Mir(D), Mir(S)].forEach(x => tenSet.delete(x));
+    
+    // 个位候选 = {D, S, D-1, S-1} 剔除 {N-1 个位}
     const unitSet = new Set([D, S, w(D - 1), w(S - 1)]);
     unitSet.delete(pc);
+    
     const bets = [];
     for (const h of hundSet) {
         for (const t of tenSet) {
             for (const u of unitSet) {
                 const bet = [h, t, u];
+                // 1. 形态过滤：必须为组六形态（杀组三、豹子）
                 if (h === t || t === u || h === u) continue;
+                // 2. 路数过滤：杀全同路
                 if (rt(h) === rt(t) && rt(t) === rt(u)) continue;
+                // 3. 跨度过滤：杀跨度为 9 的号码
                 if (Math.max(h, t, u) - Math.min(h, t, u) === 9) continue;
+                // 4. 和值过滤：杀和值小于 8 的号码
                 if (sv(bet) < 8) continue;
                 bets.push(bet);
             }
@@ -113,14 +124,26 @@ function modA(p1) {
 }
 
 function modB(p1) {
+    // 提取双核：斩首 N-1 百位。提取 A = N-1 十位，B = N-1 个位。
     const A = p1[1], B = p1[2];
     const diff = Math.abs(A - B);
+    
+    // G1 轨道中枢判轨
+    // 若 Diff ≠ 4，保留 MAX(A,B) 核心轨
+    // 若 Diff = 4，保留 MIN(A,B) 核心轨
     const keepA = diff !== 4 ? (A >= B) : (A <= B);
     const core  = keepA ? A : B;
     const mirC  = Mir(core);
-    const Xs = [w(mirC + 2), w(mirC + 1), mirC, w(mirC - 1), w(mirC - 2)];
+    
+    // 变量 X 取值范围 = 对应镜像数字（含本身）的 ±2 护卫圈（共 5 个数字）
+    const Xs = [w(mirC - 2), w(mirC - 1), mirC, w(mirC + 1), w(mirC + 2)];
+    
     const groups = [];
     for (const X of Xs) {
+        // 保留 A 轨：核心 A 逃逸至百位或个位，原十位真空区吸入镜像 Mir(A)
+        // 骨架：[A, Mir(A), X] 或 [X, Mir(A), A]
+        // 保留 B 轨：核心 B 逃逸至百位或十位，原个位真空区吸入镜像 Mir(B)
+        // 骨架：[B, X, Mir(B)] 或 [X, B, Mir(B)]
         const b0 = keepA ? [core, mirC, X] : [core, X, mirC];
         const b1 = keepA ? [X, mirC, core] : [X, core, mirC];
         groups.push({ X, bets: [b0, b1] });
@@ -223,13 +246,18 @@ function rInput(){
     const h=S.history, n=h.length;
     const prev = n>0 ? h[n-1] : null;
     const hasPending = prev && prev.forNext && prev.forNext.module!=='STOP' && !prev.settled;
-    let guide = n<1 ? `<div class="bnr bnr-info">📋 请录入 1 期数据开始</div>` : (hasPending ? `<div class="bnr bnr-am">⏳ ${prev.issue}期 注单待结算</div>` : '');
+    let guide = n<1 ? `<div class="bnr bnr-info">📋 请录入 1 期数据开始</div>` : (hasPending ? `<div class="bnr bnr-am">⏳ ${nextIss(prev.issue)}期 注单待结算</div>` : '');
     
+    let ticketHtml = '';
+    if(prev && prev.forNext) {
+        ticketHtml = `<div class="sec">NEXT ${nextIss(prev.issue)} 推演注单</div>` + rTicket(prev.forNext);
+    }
+
     return guide + `<div class="card">
         <label class="lbl">期号</label><input class="inp" id="f-iss" type="text" inputmode="numeric" oninput="S.iss=this.value">
         <div style="margin-top:9px"><div class="dig-row">${[0,1,2].map(i=>`<input class="dig" id="d${i}" type="text" inputmode="numeric" maxlength="1" oninput="dIn(${i},this.value)">`).join('')}</div></div>
-        <button class="btn btn-cy" onclick="doRec()">存档并推演</button>
-    </div>` + (prev ? `<div class="sec">推演 ${nextIss(prev.issue)} 期</div>` + rTicket(prev.forNext) : '');
+        <button class="btn btn-cy" onclick="doRec()">录入开奖并推演</button>
+    </div>` + ticketHtml;
 }
 
 function rTicket(res){
@@ -244,27 +272,24 @@ function rTicket(res){
 
 function rHist(){
     if(!S.history.length) return `<div class="empty">暂无记录</div>`;
-    // 显示当前期及其推演出的下一期数据
     const rows = [...S.history].reverse().map((r,idx)=>{
         const realIdx = S.history.length-1-idx;
-        
-        // 第 N 行显示第 N 期的完整信息
         const currentIssue = r.issue;
         const currentDraw = r.digits ? r.digits.join('') : '-';
         
-        // 模组和注数：来自当前期推演出的下一期数据
+        // 查找上一期，看上一期推演的注单是否命中了当前期
+        const prev = realIdx > 0 ? S.history[realIdx-1] : null;
+        let hitStatus = '-';
+        let hitClass = '';
+        let modName = '-';
         let modClass = '';
         let betCount = 0;
-        if(r.forNext && r.forNext.module !== 'STOP'){
-            modClass = r.forNext.module === 'A' ? 'tmod-a' : (r.forNext.module === 'B' ? 'tmod-b' : '');
-            betCount = getBetCount(r.forNext);
-        }
-        
-        // 结果：对比当前期的开奖号与当前期的投注
-        let hitStatus = '待开';
-        let hitClass = '';
-        if(r.digits && r.forNext && r.forNext.module !== 'STOP'){
-            const isHit = checkHit(r.forNext, r.digits);
+
+        if(prev && prev.forNext && prev.forNext.module !== 'STOP'){
+            modName = prev.forNext.module;
+            modClass = modName === 'A' ? 'tmod-a' : 'tmod-b';
+            betCount = getBetCount(prev.forNext);
+            const isHit = checkHit(prev.forNext, r.digits);
             hitStatus = isHit ? '命中' : '未中';
             hitClass = isHit ? 'thit' : 'tmiss';
         }
@@ -272,8 +297,8 @@ function rHist(){
         return `<tr>
             <td><div class="tc">${currentIssue}</div><span class="del-s" onclick="del(${realIdx})">删除</span></td>
             <td><div class="tnum">${currentDraw}</div></td>
-            <td><span class="${modClass}">${modClass ? (modClass === 'tmod-a' ? 'A' : 'B') : '-'}</span></td>
-            <td>${betCount}</td>
+            <td><span class="${modClass}">${modName}</span></td>
+            <td>${betCount || '-'}</td>
             <td class="${hitClass}">${hitStatus}</td>
         </tr>`;
     }).join('');
@@ -289,9 +314,15 @@ window.doRec = () => {
     const iss=S.iss, digits=S.digs.map(Number);
     if(!iss || S.digs.some(d=>d==='')) return alert('请填入完整期号和开奖号');
     const h=S.history, n=h.length;
+    
+    // 结算上一期的推演结果
     if(n>=1 && h[n-1].forNext && !h[n-1].settled){
-        h[n-1].settled=true; h[n-1].nextDraw=digits; h[n-1].nextHit=checkHit(h[n-1].forNext, digits);
+        h[n-1].settled=true; 
+        h[n-1].nextDraw=digits; 
+        h[n-1].nextHit=checkHit(h[n-1].forNext, digits);
     }
+    
+    // 录入当前期，并推演下一期
     h.push({ issue:iss, digits, forNext:runDispatch(digits), settled:false });
     S.iss=nextIss(iss); S.digs=['','','']; save(S); render();
 };
