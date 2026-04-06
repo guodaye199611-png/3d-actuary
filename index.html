@@ -117,8 +117,11 @@ function modA(p1) {
                 if (rt(h) === rt(t) && rt(t) === rt(u)) continue;
                 // 3. 跨度过滤：杀跨度为 9 的号码
                 if (Math.max(h, t, u) - Math.min(h, t, u) === 9) continue;
-                // 4. 和值过滤：杀和值小于 8 的号码
-                if (sv(bet) < 8) continue;
+                // 4. 和值过滤：杀和值小于 10 的号码
+                if (sv(bet) < 10) continue;
+                // 5. 杀同时包含 D 和 S 的号码
+                const hasBothDS = bet.includes(D) && bet.includes(S);
+                if (hasBothDS) continue;
                 bets.push(bet);
             }
         }
