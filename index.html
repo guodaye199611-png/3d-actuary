@@ -167,7 +167,7 @@ function runDispatch(p1) {
 function getBetCount(res) {
     if (!res || res.module === 'STOP') return 0;
     if (res.module === 'A') return res.bets.length;
-    return 10;
+    return 20;
 }
 
 function checkHit(res, draw) {
@@ -273,7 +273,7 @@ function rTicket(res){
         return `<div class="ticket"><div class="tkt-hdr"><div class="tkt-mod tm-a">MOD-A 对子爆破</div><div style="font-size:10px">${res.bets.length}注</div></div><div class="tkt-body">${html}</div></div>`;
     }
     const rows = res.groups.map(g=>`<div class="mb-row"><div class="mb-num">${g.bets[0].join('')}</div><div class="mb-num">${g.bets[1].join('')}</div></div>`).join('');
-    return `<div class="ticket"><div class="tkt-hdr"><div class="tkt-mod tm-b">MOD-B 双核引力</div><div style="font-size:10px">10注</div></div>${rows}</div>`;
+    return `<div class="ticket"><div class="tkt-hdr"><div class="tkt-mod tm-b">MOD-B 双核引力</div><div style="font-size:10px">20注</div></div>${rows}</div>`;
 }
 
 function rHist(){
