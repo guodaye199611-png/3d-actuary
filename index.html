@@ -130,31 +130,28 @@ function modA(p1) {
 }
 
 function modB(p1) {
-    // 提取双核：斩首 N-1 百位。提取 A = N-1 十位，B = N-1 个位。
     const A = p1[1], B = p1[2];
-    const diff = Math.abs(A - B);
+    const mirA = Mir(A);
+    const mirB = Mir(B);
     
-    // G1 轨道中枢判轨
-    // 若 Diff ≠ 4，保留 MAX(A,B) 核心轨
-    // 若 Diff = 4，保留 MIN(A,B) 核心轨
-    const keepA = diff !== 4 ? (A >= B) : (A <= B);
-    const core  = keepA ? A : B;
-    const mirC  = Mir(core);
-    
-    // 变量 X 取值范围 = 对应镜像数字（含本身）的 ±2 护卫圈（共 5 个数字）
-    const Xs = [w(mirC - 2), w(mirC - 1), mirC, w(mirC + 1), w(mirC + 2)];
+    const XsA = [w(mirA - 2), w(mirA - 1), mirA, w(mirA + 1), w(mirA + 2)];
+    const XsB = [w(mirB - 2), w(mirB - 1), mirB, w(mirB + 1), w(mirB + 2)];
     
     const groups = [];
-    for (const X of Xs) {
-        // 保留 A 轨：核心 A 逃逸至百位或个位，原十位真空区吸入镜像 Mir(A)
-        // 骨架：[A, Mir(A), X] 或 [X, Mir(A), A]
-        // 保留 B 轨：核心 B 逃逸至百位或十位，原个位真空区吸入镜像 Mir(B)
-        // 骨架：[B, X, Mir(B)] 或 [X, B, Mir(B)]
-        const b0 = keepA ? [core, mirC, X] : [core, X, mirC];
-        const b1 = keepA ? [X, mirC, core] : [X, core, mirC];
-        groups.push({ X, bets: [b0, b1] });
+    
+    for (const X of XsA) {
+        const b0 = [A, mirA, X];
+        const b1 = [X, mirA, A];
+        groups.push({ X, track: 'A', bets: [b0, b1] });
     }
-    return { module: 'B', groups, core, mirC, keepA };
+    
+    for (const X of XsB) {
+        const b0 = [B, X, mirB];
+        const b1 = [X, B, mirB];
+        groups.push({ X, track: 'B', bets: [b0, b1] });
+    }
+    
+    return { module: 'B', groups, A, B, mirA, mirB };
 }
 
 function runDispatch(p1) {
