@@ -274,7 +274,7 @@ function rTicket(res){
     const groupsB = res.groups.filter(g => g.track === 'B');
     const rowsA = groupsA.map(g=>`<div class="mb-row"><div class="mb-num">${g.bets[0].join('')}</div><div class="mb-num">${g.bets[1].join('')}</div></div>`).join('');
     const rowsB = groupsB.map(g=>`<div class="mb-row"><div class="mb-num">${g.bets[0].join('')}</div><div class="mb-num">${g.bets[1].join('')}</div></div>`).join('');
-    return `<div class="ticket"><div class="tkt-hdr"><div class="tkt-mod tm-b">MOD-B 双核引力</div><div style="font-size:10px">20注</div></div><div style="padding:4px 13px">${rowsA}</div><div style="height:8px"></div><div style="padding:4px 13px">${rowsB}</div></div>`;}
+    return `<div class="ticket"><div class="tkt-hdr"><div class="tkt-mod tm-b">MOD-B 双核引力</div><div style="font-size:10px">20注</div></div><div style="padding:4px 13px">${rowsA}</div><div style="height:8px"></div><div style="padding:4px 13px">${rowsB}</div></div>`;
 }
 
 function rHist(){
