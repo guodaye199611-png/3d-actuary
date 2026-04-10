@@ -272,7 +272,7 @@ function rTicket(res){
     }
     const rows = res.groups.map((g,i)=>{
         const sep = i === 10 ? '<div style="border-top:1px solid var(--b2);margin:2px 0"></div>' : '';
-        return sep + `<div class="mb-row"><div class="mb-num">${g.bets[0].join('')}</div><div class="mb-num">${g.bets[1].join('')}</div></div>`;
+        return `<div class="mb-row"><div class="mb-num">${g.bets[0].join('')}</div><div class="mb-num">${g.bets[1].join('')}</div></div>` + sep;
     }).join('');
     return `<div class="ticket"><div class="tkt-hdr"><div class="tkt-mod tm-b">MOD-B 双核引力</div><div style="font-size:10px">20注</div></div>${rows}</div>`;
 }
